@@ -67,7 +67,7 @@ class BOJCrawler:
                                 .get("title", "")
                                 .strip(),
                                 "language": cols[6].text.strip(),
-                                "time": cols[8].find("a").get("title", "").strip(),
+                                "submission_time": cols[8].find("a").get("title", "").strip(),
                             }
                             problems.append(problem)
                     except Exception as e:
