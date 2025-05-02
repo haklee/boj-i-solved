@@ -8,10 +8,11 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
 - Extracts information about solved problems including:
     - Submission ID
     - Problem ID
-    - Problem Title
+    - Problem Title (from title attribute)
     - Programming Language
-    - Submission Time
+    - Submission Time (from title attribute)
 - Saves the results to a JSON file
+- Includes rate limiting (2 seconds between requests) to prevent server overload
 
 ## Requirements
 
@@ -19,7 +20,7 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
 - Required packages (install using `pip install -r requirements.txt`):
     - requests
     - beautifulsoup4
-    - lxml
+    - html5lib
 
 ## Usage
 
@@ -57,3 +58,9 @@ The script generates a JSON file (`solved_problems.json`) containing an array of
   ...
 ]
 ```
+
+## Notes
+
+- The script uses a 2-second delay between requests to be respectful to the BOJ servers
+- Problem titles and submission times are extracted from the title attributes of the respective elements
+- The script handles pagination automatically to collect all solved problems
