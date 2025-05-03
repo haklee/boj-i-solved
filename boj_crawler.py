@@ -7,10 +7,11 @@ from urllib.parse import urljoin
 from datetime import datetime
 import sys
 import os
+import argparse
 
 
 class BOJCrawler:
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, target_month: str = None):
         self.user_id = user_id
         self.base_url = "https://www.acmicpc.net"
         self.status_url = f"{self.base_url}/status?user_id={user_id}&result_id=4"  # result_id=4 for accepted solutions
@@ -18,6 +19,7 @@ class BOJCrawler:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         self.delay = 2  # seconds between requests
+        self.target_month = target_month
 
     def log_error(self, message: str, error: Exception = None):
         """Log error messages with timestamp"""
@@ -32,72 +34,84 @@ class BOJCrawler:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] INFO: {message}")
 
+    def is_target_month(self, submission_time: str) -> bool:
+        """Check if the submission time matches the target month"""
+        if not self.target_month:
+            return True
+        try:
+            # Convert submission_time to datetime
+            dt = datetime.strptime(submission_time, "%Y-%m-%d %H:%M:%S")
+            # Format as yyyymm
+            submission_month = dt.strftime("%Y%m")
+            return submission_month == self.target_month
+        except ValueError:
+            return False
+
     def get_solved_problems(self) -> List[Dict]:
         """
         Crawl the status page and return a list of solved problems
         """
         all_problems = []
         current_url = self.status_url
-
+        
         while current_url:
             try:
                 self.log_info(f"Crawling page: {current_url}")
                 response = requests.get(current_url, headers=self.headers)
                 response.raise_for_status()
-
+                
                 soup = BeautifulSoup(response.text, "html5lib")
                 problems = []
-
+                
                 # Find the table containing the submissions
                 table = soup.find("table", {"id": "status-table"})
                 if not table:
                     self.log_error("Status table not found on the page")
                     break
-
+                
                 # Get all rows except the header
                 rows = table.find_all("tr")[1:]
-
+                
                 for row in rows:
                     try:
                         cols = row.find_all("td")
                         if len(cols) >= 6:
+                            submission_time = cols[8].find("a").get("title", "").strip()
+                            if not self.is_target_month(submission_time):
+                                continue
+                                
                             problem = {
                                 "submission_id": cols[0].text.strip(),
                                 "problem_id": cols[2].text.strip(),
-                                "problem_title": cols[2]
-                                .find("a")
-                                .get("title", "")
-                                .strip(),
+                                "problem_title": cols[2].find("a").get("title", "").strip(),
                                 "language": cols[6].text.strip(),
-                                "submission_time": cols[8].find("a").get("title", "").strip(),
+                                "submission_time": submission_time,
                             }
                             problems.append(problem)
                     except Exception as e:
                         self.log_error("Error parsing problem row", e)
-
+                
                 all_problems.extend(problems)
                 self.log_info(f"Found {len(problems)} problems on current page")
-
+                
                 # Find the next page link
                 next_page = soup.find("a", {"id": "next_page"})
                 if next_page and "href" in next_page.attrs:
                     current_url = urljoin(self.base_url, next_page["href"])
                     self.log_info(f"Found next page: {current_url}")
-                    self.log_info(
-                        f"Waiting {self.delay} seconds before next request..."
-                    )
+                    self.log_info(f"Waiting {self.delay} seconds before next request...")
                     time.sleep(self.delay)
                 else:
                     self.log_info("No more pages to crawl")
                     current_url = None
-
+                
             except requests.exceptions.RequestException as e:
                 self.log_error(f"Request failed for URL: {current_url}", e)
                 break
             except Exception as e:
                 self.log_error("Unexpected error occurred", e)
                 break
-
+        
         return all_problems
 
     def save_to_json(self, problems: List[Dict], filename: str = "solved_problems.json"):
@@ -119,14 +133,23 @@ class BOJCrawler:
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python boj_crawler.py <username>")
-        sys.exit(1)
-        
-    user_id = sys.argv[1]
-    crawler = BOJCrawler(user_id)
+    parser = argparse.ArgumentParser(description='Crawl BOJ solved problems for a user')
+    parser.add_argument('-u', '--username', required=True, help='BOJ username to crawl')
+    parser.add_argument('-d', '--date', help='Filter by submission month in YYYYMM format (e.g., 202401)')
+    args = parser.parse_args()
     
-    crawler.log_info(f"Starting crawler for user: {user_id}")
+    # Validate date format if provided
+    if args.date:
+        try:
+            datetime.strptime(args.date, "%Y%m")
+        except ValueError:
+            print("Error: Date must be in YYYYMM format (e.g., 202401)")
+            sys.exit(1)
+    
+    user_id = args.username
+    crawler = BOJCrawler(user_id, args.date)
+    
+    crawler.log_info(f"Starting crawler for user: {user_id}" + (f" (filtering by month: {args.date})" if args.date else ""))
     problems = crawler.get_solved_problems()
     
     if problems:

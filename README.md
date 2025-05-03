@@ -13,6 +13,7 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
     - Submission Time (from title attribute)
 - Saves the results to a JSON file in a user-specific folder
 - Includes rate limiting (2 seconds between requests) to prevent server overload
+- Optional date filtering to get solutions from a specific month
 
 ## Requirements
 
@@ -30,15 +31,19 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
 pip install -r requirements.txt
 ```
 
-2. Run the script with a BOJ username:
+2. Run the script with a BOJ username using the -u option:
 
 ```bash
-python boj_crawler.py <username>
+python boj_crawler.py -u <username> [-d YYYYMM]
 ```
 
 For example:
 ```bash
-python boj_crawler.py hakleealgo
+# Get all solved problems
+python boj_crawler.py -u hakleealgo
+
+# Get problems solved in January 2024
+python boj_crawler.py -u hakleealgo -d 202401
 ```
 
 The script will crawl the status page for the specified user and save the results to `<username>/solved_problems.json`.
@@ -70,3 +75,4 @@ The script creates a folder named after the user and generates a JSON file (`sol
 - Problem titles and submission times are extracted from the title attributes of the respective elements
 - The script handles pagination automatically to collect all solved problems
 - Each user's data is stored in a separate folder to keep the data organized
+- When using the -d option, the date must be in YYYYMM format (e.g., 202401 for January 2024)
