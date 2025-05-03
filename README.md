@@ -11,7 +11,7 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
     - Problem Title (from title attribute)
     - Programming Language
     - Submission Time (from title attribute)
-- Saves the results to a JSON file
+- Saves the results to a JSON file in a user-specific folder
 - Includes rate limiting (2 seconds between requests) to prevent server overload
 
 ## Requirements
@@ -30,13 +30,18 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
 pip install -r requirements.txt
 ```
 
-2. Run the script:
+2. Run the script with a BOJ username:
 
 ```bash
-python boj_crawler.py
+python boj_crawler.py <username>
 ```
 
-The script will crawl the status page for the user "hakleealgo" and save the results to `solved_problems.json`.
+For example:
+```bash
+python boj_crawler.py hakleealgo
+```
+
+The script will crawl the status page for the specified user and save the results to `<username>/solved_problems.json`.
 
 ## Customization
 
@@ -44,7 +49,7 @@ To crawl a different user's solved problems, modify the `user_id` variable in th
 
 ## Output
 
-The script generates a JSON file (`solved_problems.json`) containing an array of solved problems with the following structure:
+The script creates a folder named after the user and generates a JSON file (`solved_problems.json`) inside that folder. The JSON file contains an array of solved problems with the following structure:
 
 ```json
 [
@@ -64,3 +69,4 @@ The script generates a JSON file (`solved_problems.json`) containing an array of
 - The script uses a 2-second delay between requests to be respectful to the BOJ servers
 - Problem titles and submission times are extracted from the title attributes of the respective elements
 - The script handles pagination automatically to collect all solved problems
+- Each user's data is stored in a separate folder to keep the data organized

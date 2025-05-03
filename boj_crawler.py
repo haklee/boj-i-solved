@@ -5,6 +5,8 @@ import json
 from typing import List, Dict
 from urllib.parse import urljoin
 from datetime import datetime
+import sys
+import os
 
 
 class BOJCrawler:
@@ -98,28 +100,35 @@ class BOJCrawler:
 
         return all_problems
 
-    def save_to_json(
-        self, problems: List[Dict], filename: str = "solved_problems.json"
-    ):
+    def save_to_json(self, problems: List[Dict], filename: str = "solved_problems.json"):
         """
-        Save the solved problems to a JSON file
+        Save the solved problems to a JSON file in a folder named after the user
         """
         try:
-            with open(filename, "w", encoding="utf-8") as f:
+            # Create directory if it doesn't exist
+            user_dir = os.path.join(os.getcwd(), self.user_id)
+            os.makedirs(user_dir, exist_ok=True)
+            
+            # Save file in the user's directory
+            filepath = os.path.join(user_dir, filename)
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(problems, f, ensure_ascii=False, indent=2)
-            self.log_info(f"Successfully saved {len(problems)} problems to {filename}")
+            self.log_info(f"Successfully saved {len(problems)} problems to {filepath}")
         except Exception as e:
             self.log_error(f"Failed to save problems to {filename}", e)
 
 
 def main():
-    # Example usage
-    user_id = "hakleealgo"
+    if len(sys.argv) != 2:
+        print("Usage: python boj_crawler.py <username>")
+        sys.exit(1)
+        
+    user_id = sys.argv[1]
     crawler = BOJCrawler(user_id)
-
+    
     crawler.log_info(f"Starting crawler for user: {user_id}")
     problems = crawler.get_solved_problems()
-
+    
     if problems:
         crawler.log_info(f"Total problems found: {len(problems)}")
         crawler.save_to_json(problems)
