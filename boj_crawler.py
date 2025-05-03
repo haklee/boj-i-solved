@@ -47,14 +47,28 @@ class BOJCrawler:
         except ValueError:
             return False
 
+    def is_before_target_month(self, submission_time: str) -> bool:
+        """Check if the submission time is before the target month"""
+        if not self.target_month:
+            return False
+        try:
+            # Convert submission_time to datetime
+            dt = datetime.strptime(submission_time, "%Y-%m-%d %H:%M:%S")
+            # Format as yyyymm
+            submission_month = dt.strftime("%Y%m")
+            return submission_month < self.target_month
+        except ValueError:
+            return False
+
     def get_solved_problems(self) -> List[Dict]:
         """
         Crawl the status page and return a list of solved problems
         """
         all_problems = []
         current_url = self.status_url
+        stop_crawling = False
         
-        while current_url:
+        while current_url and not stop_crawling:
             try:
                 self.log_info(f"Crawling page: {current_url}")
                 response = requests.get(current_url, headers=self.headers)
@@ -77,6 +91,13 @@ class BOJCrawler:
                         cols = row.find_all("td")
                         if len(cols) >= 6:
                             submission_time = cols[8].find("a").get("title", "").strip()
+                            
+                            # If we find a submission before target month, stop crawling
+                            if self.is_before_target_month(submission_time):
+                                self.log_info("Found submission before target month, stopping crawl")
+                                stop_crawling = True
+                                break
+                                
                             if not self.is_target_month(submission_time):
                                 continue
                                 
@@ -93,6 +114,9 @@ class BOJCrawler:
                 
                 all_problems.extend(problems)
                 self.log_info(f"Found {len(problems)} problems on current page")
+                
+                if stop_crawling:
+                    break
                 
                 # Find the next page link
                 next_page = soup.find("a", {"id": "next_page"})
