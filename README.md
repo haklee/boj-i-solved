@@ -1,6 +1,6 @@
 # BOJ Solved Problems Crawler
 
-This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect information about solved problems for a specific user.
+A Python package to crawl solved problems from Baekjoon Online Judge (BOJ) for one or multiple users.
 
 ## Features
 
@@ -16,64 +16,75 @@ This Python script crawls the Baekjoon Online Judge (BOJ) status page to collect
 - Optional date filtering to get solutions from a specific month
 - Batch crawling support for multiple users
 
-## Requirements
+## Installation
 
-- Python 3.6+
-- Required packages (install using `pip install -r requirements.txt`):
-    - requests
-    - beautifulsoup4
-    - html5lib
+### From PyPI
+
+```bash
+pip install boj-crawler
+```
+
+### From Source
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/boj-crawler.git
+cd boj-crawler
+```
+
+2. Install the package:
+```bash
+pip install -e .
+```
 
 ## Usage
 
-### Single User Crawling
+### As a Package
 
-1. Install the required packages:
+You can use the crawler in your Python code:
 
-```bash
-pip install -r requirements.txt
+```python
+from boj_crawler import BOJCrawler
+
+# Create a crawler instance
+crawler = BOJCrawler("username")
+
+# Get solved problems
+problems = crawler.get_solved_problems()
+
+# Save to JSON
+crawler.save_to_json(problems)
 ```
 
-2. Run the script with a BOJ username using the -u option:
+### Command Line Interface
 
-```bash
-python boj_crawler.py -u <username> [-d YYYYMM]
-```
+#### Single User Crawling
 
-For example:
 ```bash
 # Get all solved problems
-python boj_crawler.py -u hakleealgo
+boj-crawler -u username
 
 # Get problems solved in January 2024
-python boj_crawler.py -u hakleealgo -d 202401
+boj-crawler -u username -d 202401
 ```
 
-### Batch Crawling
+#### Batch Crawling
 
 1. Create a text file with usernames (one per line), for example `usernames.txt`:
 ```
-hakleealgo
+user1
 user2
 user3
 ```
 
 2. Run the batch crawler:
-
-```bash
-python batch_crawler.py -f usernames.txt [-d YYYYMM]
-```
-
-For example:
 ```bash
 # Get all solved problems for all users
-python batch_crawler.py -f usernames.txt
+boj-batch-crawler -f usernames.txt
 
 # Get problems solved in January 2024 for all users
-python batch_crawler.py -f usernames.txt -d 202401
+boj-batch-crawler -f usernames.txt -d 202401
 ```
-
-The script will crawl the status page for each user and save the results to `<username>/solved_problems.json`.
 
 ## Output
 
@@ -100,3 +111,29 @@ The script creates a folder named after each user and generates a JSON file (`so
 - Each user's data is stored in a separate folder to keep the data organized
 - When using the -d option, the date must be in YYYYMM format (e.g., 202401 for January 2024)
 - The batch crawler adds a 5-second delay between users to be respectful to the server
+
+## Development
+
+### Project Structure
+
+```
+boj-crawler/
+├── boj_crawler/
+│   ├── __init__.py
+│   ├── crawler.py
+│   ├── cli.py
+│   └── batch.py
+├── setup.py
+├── README.md
+└── requirements.txt
+```
+
+### Running Tests
+
+```bash
+python -m pytest tests/
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

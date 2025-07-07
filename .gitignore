@@ -37,3 +37,4 @@ ENV/
 solved_problems.json
 *.log
 usernames.txt
+reports/*
