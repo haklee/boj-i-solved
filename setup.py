@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="boj-crawler",
-    version="0.3.0",
+    version="0.3.1",
     packages=find_packages(),
     install_requires=[
         "requests>=2.31.0",

@@ -15,6 +15,8 @@ class BOJCrawler:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         self.delay = 2  # seconds between requests
+        self.max_retries = 3  # maximum number of retries for 403 errors
+        self.retry_delay = 2  # seconds between retries
         
         # Support both new date range filtering and legacy month filtering
         self.start_date = start_date
@@ -50,6 +52,49 @@ class BOJCrawler:
         """Log info messages with timestamp"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] INFO: {message}")
+
+    def log_warning(self, message: str):
+        """Log warning messages with timestamp"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{timestamp}] WARNING: {message}")
+
+    def _make_request_with_retry(self, url: str) -> requests.Response:
+        """Make HTTP request with retry logic for 403 errors"""
+        last_exception = None
+        
+        for attempt in range(self.max_retries + 1):  # 0-indexed, so max_retries + 1 total attempts
+            try:
+                response = requests.get(url, headers=self.headers)
+                
+                # Check for 403 Forbidden error
+                if response.status_code == 403:
+                    if attempt < self.max_retries:
+                        self.log_warning(f"403 Forbidden error on attempt {attempt + 1}/{self.max_retries + 1}. Retrying in {self.retry_delay} seconds...")
+                        time.sleep(self.retry_delay)
+                        continue
+                    else:
+                        # Last attempt failed, raise the exception
+                        response.raise_for_status()
+                
+                # If we get here, the request was successful or had a non-403 error
+                response.raise_for_status()
+                return response
+                
+            except requests.exceptions.RequestException as e:
+                last_exception = e
+                
+                # Only retry on 403 errors, not other request exceptions
+                if hasattr(e, 'response') and e.response and e.response.status_code == 403:
+                    if attempt < self.max_retries:
+                        self.log_warning(f"403 Forbidden error on attempt {attempt + 1}/{self.max_retries + 1}. Retrying in {self.retry_delay} seconds...")
+                        time.sleep(self.retry_delay)
+                        continue
+                
+                # For non-403 errors, raise immediately
+                raise e
+        
+        # If we get here, all retries failed
+        raise last_exception
 
     def is_in_date_range(self, submission_time: str) -> bool:
         """Check if the submission time is within the specified date range"""
@@ -122,8 +167,7 @@ class BOJCrawler:
         while current_url and not stop_crawling:
             try:
                 self.log_info(f"Crawling page: {current_url}")
-                response = requests.get(current_url, headers=self.headers)
-                response.raise_for_status()
+                response = self._make_request_with_retry(current_url)
                 
                 soup = BeautifulSoup(response.text, "html5lib")
                 problems = []
