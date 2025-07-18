@@ -35,6 +35,9 @@ def main():
     parser.add_argument('-s', '--start-date', help='Start date filter in YYMMDD format (e.g., 240315 for Mar 15, 2024)')
     parser.add_argument('-e', '--end-date', help='End date filter in YYMMDD format (e.g., 240415 for Apr 15, 2024)')
     parser.add_argument('--no-report', action='store_true', help='Skip generating monthly report')
+    parser.add_argument('--proxy-http', help='HTTP proxy server (e.g., http://proxy.example.com:8080)')
+    parser.add_argument('--proxy-https', help='HTTPS proxy server (e.g., https://proxy.example.com:8080)')
+    parser.add_argument('--proxy-all', help='Proxy server for both HTTP and HTTPS (e.g., http://proxy.example.com:8080)')
     args = parser.parse_args()
     
     # Validate month format if provided
@@ -60,6 +63,20 @@ def main():
         print("Error: Cannot use both date range filters (--start-date, --end-date) and month filter (--month) at the same time")
         return
     
+    # Configure proxy settings
+    proxies = None
+    if args.proxy_all:
+        proxies = {
+            'http': args.proxy_all,
+            'https': args.proxy_all
+        }
+    elif args.proxy_http or args.proxy_https:
+        proxies = {}
+        if args.proxy_http:
+            proxies['http'] = args.proxy_http
+        if args.proxy_https:
+            proxies['https'] = args.proxy_https
+    
     # Read usernames from file
     usernames = read_usernames(args.file)
     if not usernames:
@@ -67,7 +84,7 @@ def main():
         return
     
     # Start batch crawling using the package's functionality
-    batch_crawl(usernames, start_date=args.start_date, end_date=args.end_date, target_month=args.month, generate_report=not args.no_report)
+    batch_crawl(usernames, start_date=args.start_date, end_date=args.end_date, target_month=args.month, generate_report=not args.no_report, proxies=proxies)
 
 
 if __name__ == "__main__":

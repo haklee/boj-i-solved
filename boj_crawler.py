@@ -34,6 +34,9 @@ def main():
     parser.add_argument('-m', '--month', help='Filter by submission month in YYYYMM format (e.g., 202401)')
     parser.add_argument('-s', '--start-date', help='Start date filter in YYMMDD format (e.g., 240315 for Mar 15, 2024)')
     parser.add_argument('-e', '--end-date', help='End date filter in YYMMDD format (e.g., 240415 for Apr 15, 2024)')
+    parser.add_argument('--proxy-http', help='HTTP proxy server (e.g., http://proxy.example.com:8080)')
+    parser.add_argument('--proxy-https', help='HTTPS proxy server (e.g., https://proxy.example.com:8080)')
+    parser.add_argument('--proxy-all', help='Proxy server for both HTTP and HTTPS (e.g., http://proxy.example.com:8080)')
     args = parser.parse_args()
     
     # Validate month format if provided
@@ -59,8 +62,22 @@ def main():
         print("Error: Cannot use both date range filters (--start-date, --end-date) and month filter (--month) at the same time")
         sys.exit(1)
     
+    # Configure proxy settings
+    proxies = None
+    if args.proxy_all:
+        proxies = {
+            'http': args.proxy_all,
+            'https': args.proxy_all
+        }
+    elif args.proxy_http or args.proxy_https:
+        proxies = {}
+        if args.proxy_http:
+            proxies['http'] = args.proxy_http
+        if args.proxy_https:
+            proxies['https'] = args.proxy_https
+    
     user_id = args.username
-    crawler = BOJCrawler(user_id, start_date=args.start_date, end_date=args.end_date, target_month=args.month)
+    crawler = BOJCrawler(user_id, start_date=args.start_date, end_date=args.end_date, target_month=args.month, proxies=proxies)
     
     # Build filter description for logging
     filter_desc = ""
@@ -73,6 +90,10 @@ def main():
             filter_desc = f" (filtering until {args.end_date})"
     elif args.month:
         filter_desc = f" (filtering by month: {args.month})"
+    
+    if proxies:
+        proxy_desc = f" using proxy: {proxies}"
+        filter_desc += proxy_desc
     
     crawler.log_info(f"Starting crawler for user: {user_id}{filter_desc}")
     problems = crawler.get_solved_problems()

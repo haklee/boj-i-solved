@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 from datetime import datetime
 
 class BOJCrawler:
-    def __init__(self, user_id: str, start_date: str = None, end_date: str = None, target_month: str = None):
+    def __init__(self, user_id: str, start_date: str = None, end_date: str = None, target_month: str = None, proxies: Dict[str, str] = None):
         self.user_id = user_id
         self.base_url = "https://www.acmicpc.net"
         self.status_url = f"{self.base_url}/status?user_id={user_id}&result_id=4"  # result_id=4 for accepted solutions
@@ -17,6 +17,7 @@ class BOJCrawler:
         self.delay = 2  # seconds between requests
         self.max_retries = 3  # maximum number of retries for 403 errors
         self.retry_delay = 2  # seconds between retries
+        self.proxies = proxies  # Proxy configuration
         
         # Support both new date range filtering and legacy month filtering
         self.start_date = start_date
@@ -64,7 +65,7 @@ class BOJCrawler:
         
         for attempt in range(self.max_retries + 1):  # 0-indexed, so max_retries + 1 total attempts
             try:
-                response = requests.get(url, headers=self.headers)
+                response = requests.get(url, headers=self.headers, proxies=self.proxies)
                 
                 # Check for 403 Forbidden error
                 if response.status_code == 403:

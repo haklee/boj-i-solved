@@ -78,7 +78,7 @@ def save_monthly_report(monthly_stats: Dict[str, Dict[str, int]], all_usernames:
     except Exception as e:
         print(f"Error saving monthly report: {str(e)}")
 
-def batch_crawl(usernames: List[str], start_date: str = None, end_date: str = None, target_month: str = None, generate_report: bool = True):
+def batch_crawl(usernames: List[str], start_date: str = None, end_date: str = None, target_month: str = None, generate_report: bool = True, proxies: Dict[str, str] = None):
     """Crawl BOJ for multiple users"""
     total_users = len(usernames)
     
@@ -94,6 +94,10 @@ def batch_crawl(usernames: List[str], start_date: str = None, end_date: str = No
     elif target_month:
         filter_desc = f" (filtering by month: {target_month})"
     
+    if proxies:
+        proxy_desc = f" using proxy: {proxies}"
+        filter_desc += proxy_desc
+    
     print(f"Starting batch crawl for {total_users} users{filter_desc}")
     
     # Create a combined monthly report if requested
@@ -102,7 +106,7 @@ def batch_crawl(usernames: List[str], start_date: str = None, end_date: str = No
     for i, username in enumerate(usernames, 1):
         print(f"\nProcessing user {i}/{total_users}: {username}")
         try:
-            crawler = BOJCrawler(username, start_date=start_date, end_date=end_date, target_month=target_month)
+            crawler = BOJCrawler(username, start_date=start_date, end_date=end_date, target_month=target_month, proxies=proxies)
             problems = crawler.get_solved_problems()
             
             if problems:
@@ -142,6 +146,7 @@ def main():
     parser.add_argument('-s', '--start-date', help='Start date filter in YYMMDD format (e.g., 240315 for Mar 15, 2024)')
     parser.add_argument('-e', '--end-date', help='End date filter in YYMMDD format (e.g., 240415 for Apr 15, 2024)')
     parser.add_argument('--no-report', action='store_true', help='Skip generating monthly report')
+    parser.add_argument('--proxy', nargs=2, metavar=('http', 'https'), help='Use a proxy for requests (e.g., --proxy http 127.0.0.1:8080)')
     args = parser.parse_args()
     
     # Validate month format if provided
@@ -174,7 +179,13 @@ def main():
         return
     
     # Start batch crawling
-    batch_crawl(usernames, start_date=args.start_date, end_date=args.end_date, target_month=args.month, generate_report=not args.no_report)
+    proxies = None
+    if args.proxy:
+        proxies = {
+            'http': args.proxy[0],
+            'https': args.proxy[1]
+        }
+    batch_crawl(usernames, start_date=args.start_date, end_date=args.end_date, target_month=args.month, generate_report=not args.no_report, proxies=proxies)
 
 if __name__ == "__main__":
     main() 
